@@ -2549,6 +2549,28 @@
     <string name="synonym_rename_target_confirm">대상 태그 「%1$s」을(를) 「%2$s」(으)로 변경할까요?</string>
     <string name="synonym_field_name">태그 이름</string>
     <string name="synonym_field_remark">메모</string>
+
+    <!-- 태그 그룹: 북마크 태그 필터 목록에서 자식 태그를 부모 태그 아래에 접어 표시 -->
+    <string name="tag_group_title">태그 그룹</string>
+    <string name="tag_group_enable">태그 그룹 사용</string>
+    <string name="tag_group_empty">아직 태그 그룹이 없습니다. 오른쪽 위에서 부모 태그(작품명 등)를 만들고 자식 태그(캐릭터명 등)를 추가하면 필터 목록에서 부모 태그 아래에 접혀 표시됩니다.</string>
+    <string name="tag_group_new_group">부모 태그 만들기</string>
+    <string name="tag_group_group_name_hint">부모 태그 이름(작품명 등, 공백 불가)</string>
+    <string name="tag_group_add_child">자식 태그 추가</string>
+    <string name="tag_group_child_name_hint">자식 태그 이름(캐릭터명 등)</string>
+    <string name="tag_group_rename_group_title">부모 태그 “%1$s” 이름 변경</string>
+    <string name="tag_group_rename_child_title">자식 태그 “%1$s” 이름 변경</string>
+    <string name="tag_group_rename">이름 변경</string>
+    <string name="tag_group_delete">삭제</string>
+    <string name="tag_group_group_count">부모 태그 %1$d개</string>
+    <string name="tag_group_child_count">자식 태그 %1$d개</string>
+    <string name="tag_group_name_invalid">태그 이름은 비어 있거나 공백을 포함할 수 없습니다</string>
+    <string name="tag_group_group_exists">같은 이름의 부모 태그가 이미 있습니다</string>
+    <string name="tag_group_child_exists">이 자식 태그는 이미 존재합니다</string>
+    <string name="tag_group_delete_group_confirm">부모 태그 “%1$s”과(와) 자식 태그 %2$d개를 삭제할까요?\n필터 목록의 표시에만 영향을 주며 북마크에는 영향이 없습니다.</string>
+    <string name="tag_group_delete_child_confirm">자식 태그 “%1$s”을(를) 그룹에서 제거할까요?</string>
+    <string name="tag_group_clear_all">그룹 전체 삭제</string>
+    <string name="tag_group_clear_all_confirm">부모 태그 %1$d개와 자식 태그를 모두 삭제할까요?\n필터 목록의 표시에만 영향을 주며 북마크에는 영향이 없습니다.</string>
     <string name="local_novel_entry">로컬 소설</string>
     <string name="local_novel_pick_folder">폴더 선택</string>
     <string name="local_novel_empty_no_root">아직 폴더를 선택하지 않았습니다.\ntxt 파일이 있는 폴더를 선택해 읽기를 시작하세요.</string>

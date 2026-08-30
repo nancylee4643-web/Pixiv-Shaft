@@ -2566,6 +2566,28 @@
     <string name="synonym_rename_target_confirm">Rename target tag “%1$s” to “%2$s”?</string>
     <string name="synonym_field_name">Tag name</string>
     <string name="synonym_field_remark">Remark</string>
+
+    <!-- Tag groups: collapse child tags under a parent tag in the bookmark tag filter list -->
+    <string name="tag_group_title">Tag Groups</string>
+    <string name="tag_group_enable">Enable tag groups</string>
+    <string name="tag_group_empty">No tag groups yet. Create a parent tag (e.g. a series name) from the top-right menu, then add child tags (e.g. character names); they will be collapsed under the parent in the bookmark tag filter list.</string>
+    <string name="tag_group_new_group">New parent tag</string>
+    <string name="tag_group_group_name_hint">Parent tag name (e.g. series name, no spaces)</string>
+    <string name="tag_group_add_child">Add child tag</string>
+    <string name="tag_group_child_name_hint">Child tag name (e.g. character name)</string>
+    <string name="tag_group_rename_group_title">Rename parent tag “%1$s”</string>
+    <string name="tag_group_rename_child_title">Rename child tag “%1$s”</string>
+    <string name="tag_group_rename">Rename</string>
+    <string name="tag_group_delete">Delete</string>
+    <string name="tag_group_group_count">%1$d parent tags</string>
+    <string name="tag_group_child_count">%1$d child tags</string>
+    <string name="tag_group_name_invalid">Tag name cannot be empty or contain spaces</string>
+    <string name="tag_group_group_exists">A parent tag with this name already exists</string>
+    <string name="tag_group_child_exists">This child tag already exists</string>
+    <string name="tag_group_delete_group_confirm">Delete parent tag “%1$s” and its %2$d child tags?\nThis only affects grouping in the filter list, not your bookmarks.</string>
+    <string name="tag_group_delete_child_confirm">Remove child tag “%1$s” from its group?</string>
+    <string name="tag_group_clear_all">Clear all groups</string>
+    <string name="tag_group_clear_all_confirm">Delete all %1$d parent tags and their child tags?\nThis only affects grouping in the filter list, not your bookmarks.</string>
     <string name="local_novel_entry">Local Novels</string>
     <string name="local_novel_pick_folder">Choose Folder</string>
     <string name="local_novel_empty_no_root">No folder selected yet.\nPick a folder with .txt files to start reading.</string>

@@ -22,6 +22,9 @@ import ceui.pixiv.db.queue.DownloadQueueEntity;
 import ceui.pixiv.db.synonym.SynonymDao;
 import ceui.pixiv.db.synonym.SynonymTagEntity;
 import ceui.pixiv.db.synonym.SynonymTargetEntity;
+import ceui.pixiv.db.taggroup.TagGroupChildEntity;
+import ceui.pixiv.db.taggroup.TagGroupDao;
+import ceui.pixiv.db.taggroup.TagGroupEntity;
 
 @Database(
         entities = {
@@ -49,13 +52,15 @@ import ceui.pixiv.db.synonym.SynonymTargetEntity;
                 SynonymTargetEntity.class, // 同义词词典-目标标签（v36 建表 / v37 加 lastUsedAt, issue #904/#910）
                 SynonymTagEntity.class, // 同义词词典-同义词（v36, issue #904）
                 FeedCacheEntity.class, // feeds 框架本地优先首屏快照（v39）
+                TagGroupEntity.class, // 标签分组-父标签（v42, 收藏标签筛选列表折叠子标签）
+                TagGroupChildEntity.class, // 标签分组-子标签（v42）
         },
         version = AppDatabase.VERSION,
         exportSchema = true
 )
 public abstract class AppDatabase extends RoomDatabase {
 
-    public static final int VERSION = 41;
+    public static final int VERSION = 42;
     public static final String DATABASE_NAME = "roomDemo-database";
     private static final Migration MIGRATION_23_24 = new Migration(23, 24) {
         @Override
@@ -405,6 +410,34 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    // 迁移 41 -> 42：标签分组两张表（收藏标签筛选列表把子标签折叠到父标签下，如 作品名→角色名）。
+    // 父标签（组）<- 1:N -> 子标签；子标签 name 全局唯一（一个子标签只归属一个父标签）。
+    // 列名 / 类型 / 可空性必须与 TagGroupEntity / TagGroupChildEntity 完全一致，
+    // 索引名必须与 Room 由 @Index 生成的一致：index_<table>_<column>。
+    private static final Migration MIGRATION_41_42 = new Migration(41, 42) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL(
+                    "CREATE TABLE IF NOT EXISTS tag_group_table (" +
+                            "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
+                            "name TEXT NOT NULL, " +
+                            "createdAt INTEGER NOT NULL" +
+                            ")"
+            );
+            database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_tag_group_table_name ON tag_group_table(name)");
+            database.execSQL(
+                    "CREATE TABLE IF NOT EXISTS tag_group_child_table (" +
+                            "id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
+                            "groupId INTEGER NOT NULL, " +
+                            "name TEXT NOT NULL, " +
+                            "createdAt INTEGER NOT NULL" +
+                            ")"
+            );
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_tag_group_child_table_groupId ON tag_group_child_table(groupId)");
+            database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_tag_group_child_table_name ON tag_group_child_table(name)");
+        }
+    };
+
     private static final Migration[] ALL_MIGRATIONS = {
             MIGRATION_23_24,
             MIGRATION_24_25,
@@ -424,6 +457,7 @@ public abstract class AppDatabase extends RoomDatabase {
             MIGRATION_38_39,
             MIGRATION_39_40,
             MIGRATION_40_41,
+            MIGRATION_41_42,
     };
 
     /**
@@ -483,6 +517,8 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract DownloadQueueDao downloadQueueDao();
 
     public abstract SynonymDao synonymDao();
+
+    public abstract TagGroupDao tagGroupDao();
 
     public abstract FeedCacheDao feedCacheDao();
 

@@ -490,6 +490,9 @@ public class TemplateActivity extends BaseActivity<ActivityFragmentBinding> impl
                 case "同义词词典":
                     // 同义词词典管理页（issue #904 按标签收藏优化）
                     return new ceui.pixiv.ui.synonym.SynonymDictFragment();
+                case "标签分组":
+                    // 标签分组管理页（收藏标签筛选列表把子标签折叠到父标签下）
+                    return new ceui.pixiv.ui.taggroup.TagGroupFragment();
                 case "聊天室": {
                     // peer_uid > 0 → 1v1 with that pixiv user; otherwise →
                     // conversation LIST (global + any 1v1 the user has touched

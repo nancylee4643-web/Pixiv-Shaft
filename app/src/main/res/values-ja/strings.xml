@@ -2549,6 +2549,28 @@
     <string name="synonym_rename_target_confirm">ターゲットタグ「%1$s」を「%2$s」に変更しますか？</string>
     <string name="synonym_field_name">タグ名</string>
     <string name="synonym_field_remark">メモ</string>
+
+    <!-- タググループ: ブックマークタグ絞り込み一覧で子タグを親タグの下に折りたたむ -->
+    <string name="tag_group_title">タググループ</string>
+    <string name="tag_group_enable">タググループを有効化</string>
+    <string name="tag_group_empty">タググループはまだありません。右上の「親タグを作成」でグループ（作品名など）を作り、子タグ（キャラ名など）を追加すると、絞り込み一覧で親タグの下に折りたたまれます。</string>
+    <string name="tag_group_new_group">親タグを作成</string>
+    <string name="tag_group_group_name_hint">親タグ名（作品名など、スペース不可）</string>
+    <string name="tag_group_add_child">子タグを追加</string>
+    <string name="tag_group_child_name_hint">子タグ名（キャラ名など）</string>
+    <string name="tag_group_rename_group_title">親タグ「%1$s」の名前を変更</string>
+    <string name="tag_group_rename_child_title">子タグ「%1$s」の名前を変更</string>
+    <string name="tag_group_rename">名前を変更</string>
+    <string name="tag_group_delete">削除</string>
+    <string name="tag_group_group_count">親タグ %1$d 件</string>
+    <string name="tag_group_child_count">子タグ %1$d 件</string>
+    <string name="tag_group_name_invalid">タグ名は空にできず、スペースも含められません</string>
+    <string name="tag_group_group_exists">同じ名前の親タグが既に存在します</string>
+    <string name="tag_group_child_exists">この子タグは既に存在します</string>
+    <string name="tag_group_delete_group_confirm">親タグ「%1$s」とその子タグ %2$d 件を削除しますか？\n絞り込み一覧の表示にのみ影響し、ブックマークには影響しません。</string>
+    <string name="tag_group_delete_child_confirm">子タグ「%1$s」をグループから外しますか？</string>
+    <string name="tag_group_clear_all">グループを全て削除</string>
+    <string name="tag_group_clear_all_confirm">全ての親タグ（%1$d 件）と子タグを削除しますか？\n絞り込み一覧の表示にのみ影響し、ブックマークには影響しません。</string>
     <string name="local_novel_entry">ローカル小説</string>
     <string name="local_novel_pick_folder">フォルダを選択</string>
     <string name="local_novel_empty_no_root">フォルダがまだ選択されていません。\ntxt ファイルの入ったフォルダを選んで読み始めましょう。</string>

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  「按标签筛选」—— 父标签分组行（标签分组）。与 recy_book_tag 同款 colorPrimary 卡片，
+  额外带「N 个子标签」徽章 + 旋转箭头。卡片主体单击 = 按父标签筛选；
+  toggle_zone（子标签数+箭头）是展开/收起热区（对齐同义词词典 TargetVH 的分工）。
+  父标签不在收藏标签里时用合成行（count=-1），作品数留空。
+-->
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <data>
+
+    </data>
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:clickable="true"
+        app:cardBackgroundColor="?attr/colorPrimary"
+        app:cardCornerRadius="@dimen/four_dp"
+        app:cardElevation="2dp"
+        android:foreground="?attr/selectableItemBackground"
+        android:layout_height="wrap_content">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_margin="@dimen/sixteen_dp"
+                android:textColor="@color/white"
+                android:layout_width="match_parent"
+                android:id="@+id/star_size"
+                android:singleLine="true"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:layout_toStartOf="@+id/illust_count"
+                android:layout_marginStart="@dimen/eight_dp"
+                android:layout_height="wrap_content" />
+
+            <!-- 父标签自身的作品数（合成行 count=-1 留空） -->
+            <TextView
+                android:textColor="@color/white"
+                android:layout_width="wrap_content"
+                android:layout_centerVertical="true"
+                android:id="@+id/illust_count"
+                android:layout_toStartOf="@+id/toggle_zone"
+                android:layout_marginEnd="@dimen/eight_dp"
+                android:layout_height="wrap_content" />
+
+            <!-- 展开/收起热区：子标签数 + 旋转箭头 -->
+            <LinearLayout
+                android:id="@+id/toggle_zone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="@dimen/sixteen_dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/child_count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/white"
+                    android:textSize="12sp" />
+
+                <ImageView
+                    android:id="@+id/expand_chevron"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_marginStart="4dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_v3_chevron_24"
+                    app:tint="@color/white" />
+            </LinearLayout>
+
+        </RelativeLayout>
+
+    </androidx.cardview.widget.CardView>
+</layout>

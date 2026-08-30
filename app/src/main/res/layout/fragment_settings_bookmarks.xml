@@ -200,7 +200,7 @@
                 <RelativeLayout
                     android:id="@+id/download_auto_post_like_rela"
                     style="@style/M3SetRow"
-                    android:background="@drawable/wit_row_bottom">
+                    android:background="@drawable/wit_row_mid">
 
                     <LinearLayout style="@style/M3SetTexts">
 
@@ -214,6 +214,48 @@
                         style="@style/M3SetSwitch" />
 
                 </RelativeLayout>
+
+                <RelativeLayout
+                    android:id="@+id/tag_group_enable_rela"
+                    style="@style/M3SetRow"
+                    android:background="@drawable/wit_row_mid">
+
+                    <LinearLayout style="@style/M3SetTexts">
+
+                        <TextView
+                            style="@style/M3SetTitle"
+                            android:text="@string/tag_group_enable" />
+                    </LinearLayout>
+
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/tag_group_enable"
+                        style="@style/M3SetSwitch" />
+
+                </RelativeLayout>
+
+                <LinearLayout
+                    android:id="@+id/tag_group_entry_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <RelativeLayout
+                        android:id="@+id/tag_group_rela"
+                        style="@style/M3SetRow"
+                        android:background="@drawable/wit_row_bottom">
+
+                        <LinearLayout style="@style/M3SetTexts">
+
+                            <TextView
+                                style="@style/M3SetTitle"
+                                android:text="@string/tag_group_title" />
+                        </LinearLayout>
+
+                        <TextView style="@style/M3SetArrow" />
+
+                    </RelativeLayout>
+
+                </LinearLayout>
 
             </LinearLayout>
 

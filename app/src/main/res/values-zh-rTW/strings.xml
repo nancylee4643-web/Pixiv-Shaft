@@ -2565,6 +2565,28 @@
     <string name="synonym_rename_target_confirm">將目標標籤「%1$s」重新命名為「%2$s」？</string>
     <string name="synonym_field_name">標籤名</string>
     <string name="synonym_field_remark">備註</string>
+
+    <!-- 標籤分組（收藏標籤篩選列表把子標籤摺疊到父標籤下，如 作品名→角色名） -->
+    <string name="tag_group_title">標籤分組</string>
+    <string name="tag_group_enable">啟用標籤分組</string>
+    <string name="tag_group_empty">還沒有標籤分組。點右上角「新增父標籤」建一個組（如作品名），再把子標籤（如角色名）加進去，按標籤篩選列表裡它們會摺疊到父標籤下。</string>
+    <string name="tag_group_new_group">新增父標籤</string>
+    <string name="tag_group_group_name_hint">父標籤名（如作品名，不能含空格）</string>
+    <string name="tag_group_add_child">新增子標籤</string>
+    <string name="tag_group_child_name_hint">子標籤名（如角色名）</string>
+    <string name="tag_group_rename_group_title">重新命名父標籤「%1$s」</string>
+    <string name="tag_group_rename_child_title">重新命名子標籤「%1$s」</string>
+    <string name="tag_group_rename">重新命名</string>
+    <string name="tag_group_delete">刪除</string>
+    <string name="tag_group_group_count">%1$d 個父標籤</string>
+    <string name="tag_group_child_count">%1$d 個子標籤</string>
+    <string name="tag_group_name_invalid">標籤名不能為空、不能含空格</string>
+    <string name="tag_group_group_exists">已存在同名父標籤</string>
+    <string name="tag_group_child_exists">該子標籤已存在</string>
+    <string name="tag_group_delete_group_confirm">刪除父標籤「%1$s」及其 %2$d 個子標籤？\n只影響篩選列表的分組顯示，不會影響收藏。</string>
+    <string name="tag_group_delete_child_confirm">將子標籤「%1$s」移出分組？</string>
+    <string name="tag_group_clear_all">清空全部分組</string>
+    <string name="tag_group_clear_all_confirm">刪除全部 %1$d 個父標籤及其子標籤？\n只影響篩選列表的分組顯示，不會影響收藏。</string>
     <string name="local_novel_entry">本機小說</string>
     <string name="local_novel_pick_folder">選擇資料夾</string>
     <string name="local_novel_empty_no_root">還沒有選擇小說資料夾\n選一個放了 txt 的資料夾開始閱讀</string>

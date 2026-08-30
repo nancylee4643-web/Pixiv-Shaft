@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  标签分组管理页 —— 子标签行（缩进于父标签下，仿 item_synonym_tag）。V3 设计：左侧主题色细导轨
+  把同一父标签下的子标签串成一条竖线，右侧圆角玻璃胶囊承载标签名。
+  导轨颜色在 TagGroupFragment 的 ChildVH.bind() 里 runtime 给。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="22dp"
+    android:layout_marginTop="6dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <!-- 树状缩进导轨：主题色细线，runtime 上色 -->
+    <View
+        android:id="@+id/child_rail"
+        android:layout_width="3dp"
+        android:layout_height="match_parent" />
+
+    <LinearLayout
+        android:id="@+id/child_pill"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="12dp"
+        android:background="@drawable/bg_v3_surface"
+        android:foreground="@drawable/v3_glass_surface_ripple"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="11dp">
+
+        <TextView
+            android:id="@+id/child_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/v3_text_1"
+            android:textSize="14sp"
+            tools:text="神里綾華" />
+    </LinearLayout>
+</LinearLayout>

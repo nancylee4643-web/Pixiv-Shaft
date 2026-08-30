@@ -158,6 +158,8 @@ object SettingsCatalog {
         add(Entry(BOOKMARKS, "auto_follow_after_star_rela", R.string.string_456, keywords = "自动关注 关注 follow"))
         add(Entry(BOOKMARKS, "auto_download_after_star_rela", R.string.auto_download_after_star, keywords = "自动下载 收藏下载 小说 缓存 download"))
         add(Entry(BOOKMARKS, "download_auto_post_like_rela", R.string.string_409, keywords = "自动收藏 点赞 下载 like"))
+        add(Entry(BOOKMARKS, "tag_group_enable_rela", R.string.tag_group_enable, keywords = "标签 分组 标签分组 折叠 子标签 父标签 收藏 筛选 tag group"))
+        add(Entry(BOOKMARKS, "tag_group_rela", R.string.tag_group_title, keywords = "标签 分组 标签分组 管理 父标签 子标签 作品名 角色名 折叠 tag group"))
 
         // 下载
         add(Entry(DOWNLOAD, "storage_choice_rela", R.string.setting_storage_choice, keywords = "存储 保存位置 目录 文件夹 pictures downloads saf sd卡 storage"))

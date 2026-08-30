@@ -7,6 +7,7 @@ import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
+import android.widget.TextView
 import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.lifecycle.Lifecycle
@@ -19,12 +20,16 @@ import kotlinx.coroutines.CancellationException
 import ceui.lisa.R
 import ceui.lisa.activities.Shaft
 import ceui.lisa.activities.TemplateActivity
+import ceui.lisa.database.AppDatabase
 import ceui.lisa.databinding.FragmentBookedTagFeedBinding
 import ceui.lisa.databinding.RecyBookTagBinding
+import ceui.lisa.databinding.RecyBookTagChildBinding
+import ceui.lisa.databinding.RecyBookTagGroupBinding
 import ceui.lisa.models.TagsBean
 import ceui.lisa.http.Retro
 import ceui.lisa.utils.Params
 import ceui.lisa.view.LinearItemDecoration
+import ceui.pixiv.db.taggroup.GroupWithChildren
 import ceui.pixiv.feeds.FeedFragment
 import ceui.pixiv.feeds.FeedItem
 import ceui.pixiv.feeds.FeedPage
@@ -56,7 +61,12 @@ import java.util.Locale
  *    在此常隐藏(首屏拉全由框架 loading 圈反馈),布局保留其 id 只为结构对齐。
  * 4. 行点击:发 [Params.FILTER_NOVEL]/[Params.FILTER_ILLUST] 广播(CONTENT=tag.name,
  *    STAR_TYPE=starType),然后 finish()。
- * 5. toolbar 菜单「同义词词典」仅在 [Shaft] 设置开启时显示。
+ * 5. toolbar 菜单「同义词词典」「标签分组」仅在 [Shaft] 设置开启时显示。
+ *
+ * 标签分组(父标签收纳子标签,如 作品名→角色名):配置存 Room([ceui.pixiv.db.taggroup]),
+ * 经 LiveData observe 进 [tagGroups];展示管线 [rebuildDisplay] → [buildGroupedDisplay] 把平铺
+ * 列表改组为「父标签行(默认折叠)+ 缩进子标签行」。父标签行单击仍按父标签筛选,右侧
+ * 计数+箭头热区展开/收起;子标签行单击按子标签筛选。开关关闭或无映射时输出与纯平铺逐字节一致。
  *
  * 参数:`type`([Params.DATA_TYPE],0 插画/1 小说)、`starType`([Params.STAR_TYPE],公开/私人收藏)。
  */
@@ -82,11 +92,17 @@ class BookedTagFeedFragment : FeedFragment(R.layout.fragment_booked_tag_feed) {
     /** 全量已在首屏一次拉全,无翻页;关掉滚到底自动追加(nextCursor 本就是 null,双保险)。 */
     override val loadMoreEnabled: Boolean = false
 
-    /** 过滤真源:每代真实数据落地时刷新为 `[虚拟行 + 真实标签]` 全量;搜索从它筛。 */
+    /** 过滤真源:每代真实数据落地时刷新为 `[虚拟行 + 真实标签]` 全量;搜索/分组从它算。 */
     private var fullList: List<FeedItem> = emptyList()
 
     /** 已捕获过的整代代号;只有 refresh 成功(网络首屏)才自增 refreshGeneration,自身 mutateItems 不会。 */
     private var capturedGeneration: Int = 0
+
+    /** 标签分组映射(父标签→子标签),Room LiveData 驱动,管理页改动后自动回流刷新。 */
+    private var tagGroups: List<GroupWithChildren> = emptyList()
+
+    /** 已展开的父标签名(normalize 后),内存态即可——点标签后本页就 finish,无需跨会话记忆。 */
+    private val expandedParents = mutableSetOf<String>()
 
     private val debounceHandler = Handler(Looper.getMainLooper())
     private var pendingFilter: Runnable? = null
@@ -112,7 +128,25 @@ class BookedTagFeedFragment : FeedFragment(R.layout.fragment_booked_tag_feed) {
                 }
         }
 
+        // 标签分组管理入口:开关打开时才显示(同上)。
+        if (Shaft.sSettings.isTagGroupEnabled) {
+            binding.toolbar.menu.add(getString(R.string.tag_group_title))
+                .setOnMenuItemClickListener {
+                    startActivity(Intent(requireContext(), TemplateActivity::class.java).apply {
+                        putExtra(TemplateActivity.EXTRA_FRAGMENT, "标签分组")
+                    })
+                    true
+                }
+        }
+
         setUpSearch()
+
+        // 标签分组映射:任何变动(含从管理页返回)自动重算展示。
+        AppDatabase.getAppDatabase(requireContext()).tagGroupDao().getAllWithChildrenLive()
+            .observe(viewLifecycleOwner) { groups ->
+                tagGroups = groups.orEmpty()
+                rebuildDisplay()
+            }
 
         // 配置变更后 VM 可能保留着「上次搜索的过滤子集」(refreshGeneration 已推进)。先把 capturedGeneration
         // 对齐当前值,让下面的 collector 不会把这份陈旧子集误当 fullList 捕获(否则清空搜索只剩子集、全量
@@ -137,13 +171,38 @@ class BookedTagFeedFragment : FeedFragment(R.layout.fragment_booked_tag_feed) {
         }
     }
 
+    /** 设置页关掉分组开关再回本页(resume)时重算一次;平时是无害 no-op 重提交。 */
+    override fun onResume() {
+        super.onResume()
+        if (view != null) rebuildDisplay()
+    }
+
     override fun onListReady(listView: RecyclerView) {
         // 对齐 legacy initRecyclerView 的 LinearItemDecoration(dp2px(16))。
         listView.addItemDecoration(LinearItemDecoration(16.ppppx))
     }
 
     override fun onCreateRenderers(): List<FeedRenderer<out FeedItem, out ViewBinding>> {
-        return listOf(bookedTagRenderer())
+        return listOf(bookedTagRenderer(), bookedTagGroupRenderer(), bookedTagChildRenderer())
+    }
+
+    /** 行点击共通:按标签名发筛选广播 + finish。「全部」虚拟行靠 CONTENT=""(空串)表达不过滤。 */
+    private fun sendFilterAndFinish(tag: TagsBean) {
+        val intent = Intent(
+            if (type == 1) Params.FILTER_NOVEL else Params.FILTER_ILLUST,
+        ).apply {
+            putExtra(Params.CONTENT, tag.name)
+            putExtra(Params.STAR_TYPE, starType)
+        }
+        LocalBroadcastManager.getInstance(requireContext()).sendBroadcast(intent)
+        activity?.finish()
+    }
+
+    /** 标签名文案:「#name/译名」或「#name」(虚拟「全部」的 name 空由调用方处理)。 */
+    private fun tagLabel(tag: TagsBean): String = when {
+        !tag.translated_name.isNullOrEmpty() ->
+            String.format("#%s/%s", tag.name, tag.translated_name)
+        else -> String.format("#%s", tag.name)
     }
 
     /**
@@ -154,35 +213,61 @@ class BookedTagFeedFragment : FeedFragment(R.layout.fragment_booked_tag_feed) {
     private fun bookedTagRenderer() = feedRenderer<BookedTagFeedItem, RecyBookTagBinding>(
         inflate = RecyBookTagBinding::inflate,
         create = { cell ->
-            cell.binding.root.setOnClickListener {
-                val tag = cell.item.tag
-                val intent = Intent(
-                    if (type == 1) Params.FILTER_NOVEL else Params.FILTER_ILLUST,
-                ).apply {
-                    putExtra(Params.CONTENT, tag.name)
-                    putExtra(Params.STAR_TYPE, starType)
-                }
-                LocalBroadcastManager.getInstance(requireContext()).sendBroadcast(intent)
-                activity?.finish()
-            }
+            cell.binding.root.setOnClickListener { sendFilterAndFinish(cell.item.tag) }
         },
     ) { cell ->
         val tag = cell.item.tag
         val b = cell.binding
         when {
             tag.name.isNullOrEmpty() -> b.starSize.setText(R.string.string_155)
-            !tag.translated_name.isNullOrEmpty() ->
-                b.starSize.text = String.format("#%s/%s", tag.name, tag.translated_name)
-            else -> b.starSize.text = String.format("#%s", tag.name)
+            else -> b.starSize.text = tagLabel(tag)
         }
-        if (tag.count == -1) {
-            b.illustCount.text = ""
-        } else {
-            b.illustCount.text = getString(R.string.string_156, tag.count)
-        }
+        bindCount(b.illustCount, tag.count)
     }
 
-    // ── 客户端搜索 ────────────────────────────────────────────────────────────────
+    /** 父标签分组行:行体单击=按父标签筛选(与普通标签一致);计数+箭头热区=展开/收起。 */
+    private fun bookedTagGroupRenderer() = feedRenderer<BookedTagGroupItem, RecyBookTagGroupBinding>(
+        inflate = RecyBookTagGroupBinding::inflate,
+        create = { cell ->
+            cell.binding.root.setOnClickListener { sendFilterAndFinish(cell.item.parent) }
+            cell.binding.toggleZone.setOnClickListener {
+                toggleGroupExpanded(cell.item.parent.name)
+            }
+        },
+    ) { cell ->
+        val item = cell.item
+        val b = cell.binding
+        b.starSize.text = tagLabel(item.parent)
+        bindCount(b.illustCount, item.parent.count)
+        b.childCount.text = getString(R.string.tag_group_child_count, item.children.size)
+        // 折叠指向右「›」,展开旋转 90° 朝下「⌄」;直接定位不给动画——行增删本身有 item 动画
+        b.expandChevron.rotation = if (item.expanded) 90f else 0f
+    }
+
+    /** 子标签行(缩进):单击=按该子标签筛选,行为与普通标签行一致。 */
+    private fun bookedTagChildRenderer() = feedRenderer<BookedTagChildItem, RecyBookTagChildBinding>(
+        inflate = RecyBookTagChildBinding::inflate,
+        create = { cell ->
+            cell.binding.root.setOnClickListener { sendFilterAndFinish(cell.item.tag) }
+        },
+    ) { cell ->
+        val tag = cell.item.tag
+        val b = cell.binding
+        b.starSize.text = tagLabel(tag)
+        bindCount(b.illustCount, tag.count)
+    }
+
+    private fun bindCount(view: TextView, count: Int) {
+        view.text = if (count == -1) "" else getString(R.string.string_156, count)
+    }
+
+    private fun toggleGroupExpanded(parentName: String) {
+        val key = parentName.trim().lowercase(Locale.getDefault())
+        if (!expandedParents.remove(key)) expandedParents.add(key)
+        rebuildDisplay()
+    }
+
+    // ── 客户端搜索 + 标签分组展示管线 ────────────────────────────────────────────
 
     private fun setUpSearch() {
         binding.searchClear.setOnClickListener { binding.searchInput.setText("") }
@@ -194,7 +279,7 @@ class BookedTagFeedFragment : FeedFragment(R.layout.fragment_booked_tag_feed) {
                 binding.searchClear.isVisible = q.isNotEmpty()
                 currentQuery = q
                 pendingFilter?.let { debounceHandler.removeCallbacks(it) }
-                val runnable = Runnable { applyFilter() }
+                val runnable = Runnable { rebuildDisplay() }
                 pendingFilter = runnable
                 // 清空立即生效(用户明确意图),否则 debounce 200ms。
                 debounceHandler.postDelayed(runnable, if (q.isEmpty()) 0L else 200L)
@@ -202,24 +287,18 @@ class BookedTagFeedFragment : FeedFragment(R.layout.fragment_booked_tag_feed) {
         })
     }
 
-    private fun applyFilter() {
+    /**
+     * 统一的展示重算(搜索 + 分组共用一条管线),结果经 mutateItems 提交,DiffUtil 派发最小更新。
+     * 空搜索恢复下拉刷新;有搜索禁用(对齐 legacy setEnableRefresh(false))。
+     */
+    private fun rebuildDisplay() {
         // handler 回调可能落在视图销毁之后:onDestroyView 已 removeCallbacks,这里再兜一层。
         if (view == null) return
-        val q = currentQuery.lowercase(Locale.getDefault())
-        if (q.isEmpty()) {
-            // 退出过滤态:恢复下拉刷新,列表还原成全量(fullList === 当前 items 时 mutateItems 免费 no-op)。
-            setRefreshEnabled(refreshEnabled)
-            val restore = fullList
-            feedViewModel.mutateItems { restore }
-        } else {
-            // 进入过滤态:禁用下拉刷新(对齐 legacy setEnableRefresh(false)),按 name/译名 contains 筛,
-            // 隐藏虚拟行(count==-1)。空结果 → items 变空 → 框架自动亮空态。
-            setRefreshEnabled(false)
-            val filtered = fullList.filter { item ->
-                item is BookedTagFeedItem && item.tag.count != -1 && item.tag.matches(q)
-            }
-            feedViewModel.mutateItems { filtered }
-        }
+        val q = currentQuery.trim().lowercase(Locale.getDefault())
+        setRefreshEnabled(q.isEmpty() && refreshEnabled)
+        val groups = if (Shaft.sSettings.isTagGroupEnabled) tagGroups else emptyList()
+        val display = buildGroupedDisplay(fullList, groups, expandedParents, q)
+        feedViewModel.mutateItems { display }
     }
 
     private fun onFeedState(state: FeedUiState) {
@@ -228,6 +307,9 @@ class BookedTagFeedFragment : FeedFragment(R.layout.fragment_booked_tag_feed) {
         if (state.refreshGeneration != capturedGeneration) {
             capturedGeneration = state.refreshGeneration
             fullList = state.items
+            // 基类 collector 已把这份平铺列表提交给 adapter;此处按当前分组/搜索态重算一次
+            // (分组 LiveData 的首次发射早于首屏数据落地,不重算的话首屏仍是平铺)。
+            rebuildDisplay()
             // 对齐 legacy onFirstLoaded:刷新会顺手清掉搜索态(仅在框里有字时清,免得空清触发多余回调)。
             if (!binding.searchInput.text.isNullOrEmpty()) {
                 binding.searchInput.setText("")
@@ -274,6 +356,154 @@ private fun TagsBean.matches(lowerQuery: String): Boolean {
 data class BookedTagFeedItem(val tag: TagsBean) : FeedItem {
     override val feedKey: Any =
         if (tag.count == -1) "virtual:${tag.name}" else "tag:${tag.name}"
+}
+
+/**
+ * 父标签分组行。[parent] 是收藏标签里的父标签本体;父标签不在收藏标签里时是合成行
+ * (count==-1,作品数留空)。[expanded] 仅是展示态,折叠/展开靠重建本条目触发重绑。
+ */
+data class BookedTagGroupItem(
+    val parent: TagsBean,
+    val children: List<TagsBean>,
+    val expanded: Boolean,
+) : FeedItem {
+    override val feedKey: Any = "group:${parent.name}"
+}
+
+/** 父标签分组下的子标签行(缩进展示)。 */
+data class BookedTagChildItem(val tag: TagsBean) : FeedItem {
+    override val feedKey: Any = "tagchild:${tag.name}"
+}
+
+/**
+ * 平铺收藏标签 → 分组折叠展示列表(纯函数,单测见 BookedTagGroupDisplayTest)。
+ *
+ * 无搜索:
+ * - 虚拟行 `[未分類, 全部]` 照旧置顶;子标签不平铺,归入其父标签行下(默认折叠,展开才插子行)。
+ * - 组行出现在父标签原有位置;父标签不在收藏标签里时,在其第一个出现的子标签处插合成父行
+ *   (count=-1)。父标签在但其子标签全不在 → 退化为普通标签行(无展开意义)。
+ *
+ * 有搜索(规则对齐同义词词典 SynonymDictViewModel.rebuild):
+ * - 隐藏虚拟行;未分组标签命中才显示;父标签命中 → 父行 + 全部在列表中的子行(自动展开);
+ *   仅子标签命中 → 父行 + 命中的子行(自动展开);整组无命中 → 整组隐藏,但保持从属缩进。
+ *
+ * 分组为空时输出与纯平铺逐字节一致(搜索路径同样回落原逻辑)。
+ */
+internal fun buildGroupedDisplay(
+    fullList: List<FeedItem>,
+    groups: List<GroupWithChildren>,
+    expandedParents: Set<String>,
+    lowerQuery: String,
+): List<FeedItem> {
+    if (groups.isEmpty()) {
+        return if (lowerQuery.isEmpty()) {
+            fullList
+        } else {
+            fullList.filter { item ->
+                item is BookedTagFeedItem && item.tag.count != -1 && item.tag.matches(lowerQuery)
+            }
+        }
+    }
+
+    val virtualRows = ArrayList<FeedItem>(2)
+    val realTags = ArrayList<TagsBean>(fullList.size)
+    fullList.forEach { item ->
+        if (item is BookedTagFeedItem) {
+            if (item.tag.count == -1) virtualRows.add(item) else realTags.add(item.tag)
+        }
+    }
+
+    // 归一化键:标签名 trim + lowercase(手工配置的分组难免大小写差异,如 "Genshin"/"genshin")
+    fun norm(name: String?): String = name.orEmpty().trim().lowercase(Locale.getDefault())
+
+    val groupByNorm = HashMap<String, GroupWithChildren>(groups.size)
+    val childOwner = HashMap<String, GroupWithChildren>()
+    groups.forEach { g ->
+        groupByNorm[norm(g.group.name)] = g
+        g.children.forEach { childOwner[norm(it.name)] = g }
+    }
+
+    // 每组在收藏标签中实际可见的子标签(保持列表原顺序),以及父标签本体是否在列表中
+    val presentChildren = HashMap<String, MutableList<TagsBean>>()
+    val parentBean = HashMap<String, TagsBean>()
+    realTags.forEach { tag ->
+        val key = norm(tag.name)
+        if (groupByNorm.containsKey(key)) {
+            parentBean[key] = tag
+        } else {
+            val owner = childOwner[key]
+            if (owner != null) {
+                presentChildren.getOrPut(norm(owner.group.name)) { ArrayList() }.add(tag)
+            }
+        }
+    }
+
+    // 搜索期:每组命中的子标签子集(父命中时不用它,展示全部可见子标签)
+    val matchedChildren = HashMap<String, List<TagsBean>>()
+    if (lowerQuery.isNotEmpty()) {
+        presentChildren.forEach { (ownerNorm, list) ->
+            matchedChildren[ownerNorm] = list.filter { it.matches(lowerQuery) }
+        }
+    }
+
+    val searching = lowerQuery.isNotEmpty()
+    val result = ArrayList<FeedItem>(fullList.size)
+    if (!searching) result.addAll(virtualRows)
+    val emitted = HashSet<String>()
+
+    fun emitGroup(groupNorm: String, children: List<TagsBean>, expanded: Boolean) {
+        if (!emitted.add(groupNorm)) return
+        val parent = parentBean[groupNorm] ?: TagsBean().apply {
+            name = groupByNorm[groupNorm]?.group?.name.orEmpty()
+            count = -1
+        }
+        result.add(BookedTagGroupItem(parent, children, expanded))
+        if (expanded) {
+            children.forEach { result.add(BookedTagChildItem(it)) }
+        }
+    }
+
+    realTags.forEach { tag ->
+        val key = norm(tag.name)
+        if (groupByNorm.containsKey(key)) {
+            // 父标签行(无论搜索与否都在它的原有位置出组行;搜索时未命中且无子命中则整组隐藏)
+            if (searching) {
+                if (tag.matches(lowerQuery)) {
+                    emitGroup(key, presentChildren[key].orEmpty(), expanded = true)
+                } else {
+                    val hits = matchedChildren[key].orEmpty()
+                    if (hits.isNotEmpty()) emitGroup(key, hits, expanded = true)
+                }
+            } else {
+                val children = presentChildren[key].orEmpty()
+                if (children.isEmpty()) {
+                    // 父在但子全不在 → 普通标签行
+                    result.add(BookedTagFeedItem(tag))
+                } else {
+                    emitGroup(key, children, key in expandedParents)
+                }
+            }
+            return@forEach
+        }
+        val owner = childOwner[key]
+        if (owner != null) {
+            val ownerNorm = norm(owner.group.name)
+            if (searching) {
+                if (!tag.matches(lowerQuery)) return@forEach
+                // 仅子命中:父行在此取出(或合成),列命中子集;父行在前面已展开全部时跳过
+                emitGroup(ownerNorm, matchedChildren[ownerNorm].orEmpty(), expanded = true)
+            } else if (ownerNorm !in emitted && !parentBean.containsKey(ownerNorm)) {
+                // 父标签不在收藏标签里:在其第一个子标签处插合成父行
+                emitGroup(ownerNorm, presentChildren[ownerNorm].orEmpty(), ownerNorm in expandedParents)
+            }
+            // 父标签在列表里 → 已在/将在父标签位置出组行,此处跳过
+            return@forEach
+        }
+        // 普通未分组标签
+        if (searching && !tag.matches(lowerQuery)) return@forEach
+        result.add(BookedTagFeedItem(tag))
+    }
+    return result
 }
 
 /**

@@ -2549,6 +2549,28 @@
     <string name="synonym_rename_target_confirm">“%1$s” hedef etiketi “%2$s” olarak yeniden adlandırılsın mı?</string>
     <string name="synonym_field_name">Etiket adı</string>
     <string name="synonym_field_remark">Not</string>
+
+    <!-- Etiket grupları: yer imi etiketi filtre listesinde alt etiketleri üst etiket altında katlar -->
+    <string name="tag_group_title">Etiket grupları</string>
+    <string name="tag_group_enable">Etiket gruplarını etkinleştir</string>
+    <string name="tag_group_empty">Henüz etiket grubu yok. Sağ üstteki menüden bir üst etiket (örn. seri adı) oluşturup alt etiketler (örn. karakter adları) ekleyin; filtre listesinde üst etiket altında katlanırlar.</string>
+    <string name="tag_group_new_group">Yeni üst etiket</string>
+    <string name="tag_group_group_name_hint">Üst etiket adı (örn. seri adı, boşluksuz)</string>
+    <string name="tag_group_add_child">Alt etiket ekle</string>
+    <string name="tag_group_child_name_hint">Alt etiket adı (örn. karakter adı)</string>
+    <string name="tag_group_rename_group_title">Üst etiketi yeniden adlandır: “%1$s”</string>
+    <string name="tag_group_rename_child_title">Alt etiketi yeniden adlandır: “%1$s”</string>
+    <string name="tag_group_rename">Yeniden adlandır</string>
+    <string name="tag_group_delete">Sil</string>
+    <string name="tag_group_group_count">%1$d üst etiket</string>
+    <string name="tag_group_child_count">%1$d alt etiket</string>
+    <string name="tag_group_name_invalid">Etiket adı boş olamaz ve boşluk içeremez</string>
+    <string name="tag_group_group_exists">Aynı adda bir üst etiket zaten var</string>
+    <string name="tag_group_child_exists">Bu alt etiket zaten mevcut</string>
+    <string name="tag_group_delete_group_confirm">“%1$s” üst etiketi ve %2$d alt etiketi silinsin mi?\nBu yalnızca filtre listesindeki gruplandırmayı etkiler, yer imlerinizi etkilemez.</string>
+    <string name="tag_group_delete_child_confirm">“%1$s” alt etiketi gruptan çıkarılsın mı?</string>
+    <string name="tag_group_clear_all">Tüm grupları temizle</string>
+    <string name="tag_group_clear_all_confirm">Tüm üst etiketler (%1$d) ve alt etiketleri silinsin mi?\nBu yalnızca filtre listesindeki gruplandırmayı etkiler, yer imlerinizi etkilemez.</string>
     <string name="local_novel_entry">Yerel Romanlar</string>
     <string name="local_novel_pick_folder">Klasör Seç</string>
     <string name="local_novel_empty_no_root">Henüz klasör seçilmedi.\nOkumaya başlamak için .txt dosyaları olan bir klasör seçin.</string>

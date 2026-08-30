@@ -1,9 +1,12 @@
 package ceui.lisa.fragments;
 
+import android.content.Intent;
+import android.view.View;
 import android.widget.CompoundButton;
 
 import ceui.lisa.R;
 import ceui.lisa.activities.Shaft;
+import ceui.lisa.activities.TemplateActivity;
 import ceui.lisa.databinding.FragmentSettingsBookmarksBinding;
 import ceui.lisa.utils.Common;
 import ceui.lisa.utils.Local;
@@ -121,5 +124,27 @@ public class FragmentSettingsBookmarks extends SettingsPageFragment<FragmentSett
         });
         baseBind.downloadAutoPostLikeRela.setOnClickListener(v ->
                 baseBind.downloadAutoPostLike.performClick());
+
+        // 标签分组（收藏标签筛选列表把子标签折叠到父标签下），默认开启；关闭时管理入口隐藏
+        baseBind.tagGroupEnable.setChecked(Shaft.sSettings.isTagGroupEnabled());
+        baseBind.tagGroupEntryContainer.setVisibility(
+                Shaft.sSettings.isTagGroupEnabled() ? View.VISIBLE : View.GONE);
+        baseBind.tagGroupEnable.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                Shaft.sSettings.setTagGroupEnabled(isChecked);
+                Common.showToast(getString(R.string.string_428));
+                Local.setSettings(Shaft.sSettings);
+                baseBind.tagGroupEntryContainer.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+            }
+        });
+        baseBind.tagGroupEnableRela.setOnClickListener(v ->
+                baseBind.tagGroupEnable.performClick());
+
+        baseBind.tagGroupRela.setOnClickListener(v -> {
+            Intent intent = new Intent(mContext, TemplateActivity.class);
+            intent.putExtra(TemplateActivity.EXTRA_FRAGMENT, "标签分组");
+            startActivity(intent);
+        });
     }
 }

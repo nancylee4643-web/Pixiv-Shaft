@@ -2839,6 +2839,28 @@
     <string name="synonym_field_name">标签名</string>
     <string name="synonym_field_remark">备注</string>
 
+    <!-- 标签分组（收藏标签筛选列表把子标签折叠到父标签下，如 作品名→角色名）ceui.pixiv.db.taggroup / ceui.pixiv.ui.taggroup -->
+    <string name="tag_group_title">标签分组</string>
+    <string name="tag_group_enable">启用标签分组</string>
+    <string name="tag_group_empty">还没有标签分组。点右上角「新建父标签」建一个组（如作品名），再把子标签（如角色名）加进去，按标签筛选列表里它们会折叠到父标签下。</string>
+    <string name="tag_group_new_group">新建父标签</string>
+    <string name="tag_group_group_name_hint">父标签名（如作品名，不能含空格）</string>
+    <string name="tag_group_add_child">添加子标签</string>
+    <string name="tag_group_child_name_hint">子标签名（如角色名）</string>
+    <string name="tag_group_rename_group_title">重命名父标签「%1$s」</string>
+    <string name="tag_group_rename_child_title">重命名子标签「%1$s」</string>
+    <string name="tag_group_rename">重命名</string>
+    <string name="tag_group_delete">删除</string>
+    <string name="tag_group_group_count">%1$d 个父标签</string>
+    <string name="tag_group_child_count">%1$d 个子标签</string>
+    <string name="tag_group_name_invalid">标签名不能为空、不能含空格</string>
+    <string name="tag_group_group_exists">已存在同名父标签</string>
+    <string name="tag_group_child_exists">该子标签已存在</string>
+    <string name="tag_group_delete_group_confirm">删除父标签「%1$s」及其 %2$d 个子标签？\n只影响筛选列表的分组显示，不会影响收藏。</string>
+    <string name="tag_group_delete_child_confirm">将子标签「%1$s」移出分组？</string>
+    <string name="tag_group_clear_all">清空全部分组</string>
+    <string name="tag_group_clear_all_confirm">删除全部 %1$d 个父标签及其子标签？\n只影响筛选列表的分组显示，不会影响收藏。</string>
+
     <!-- 本地小说书库 -->
     <string name="local_novel_entry">本地小说</string>
     <string name="local_novel_pick_folder">选择文件夹</string>

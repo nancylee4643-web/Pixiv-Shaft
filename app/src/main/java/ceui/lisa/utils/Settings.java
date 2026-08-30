@@ -411,6 +411,10 @@ public class Settings {
     // 关闭时所有相关 UI（详情页匹配框/长按菜单项/管理页入口/自动导入/自动勾选）完全隐藏
     private boolean synonymDictEnabled = false;
 
+    // 标签分组总开关（收藏标签筛选列表把子标签折叠到父标签下），默认开启。
+    // 分组只有建了映射才会生效，开关作临时停用：关闭时筛选列表退回纯平铺，管理入口隐藏
+    private boolean tagGroupEnabled = true;
+
     // 动图(ugoira) RIFE AI 补帧，默认关闭。开启且补帧模型已下载时,播放引擎在编码前
     // 对帧序列做 2x 插帧,帧率翻倍;模型未下载则静默回落原始帧率
     private boolean ugoiraRifeEnable = false;
@@ -1286,6 +1290,14 @@ public class Settings {
 
     public void setSynonymDictEnabled(boolean synonymDictEnabled) {
         this.synonymDictEnabled = synonymDictEnabled;
+    }
+
+    public boolean isTagGroupEnabled() {
+        return tagGroupEnabled;
+    }
+
+    public void setTagGroupEnabled(boolean tagGroupEnabled) {
+        this.tagGroupEnabled = tagGroupEnabled;
     }
 
     public int getUgoiraSaveFormat() {
