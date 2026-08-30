@@ -2571,6 +2571,13 @@
     <string name="tag_group_delete_child_confirm">Убрать дочерний тег «%1$s» из группы?</string>
     <string name="tag_group_clear_all">Очистить все группы</string>
     <string name="tag_group_clear_all_confirm">Удалить все родительские теги (%1$d) и их дочерние теги?\nЭто влияет только на группировку в списке фильтра, закладки не затрагиваются.</string>
+    <string name="tag_group_assign_title">Сгруппировать «%1$s» под родительским тегом</string>
+    <string name="tag_group_create_and_assign">Создать родительский тег</string>
+    <string name="tag_group_create_and_assign_title">Новый родительский тег для «%1$s»</string>
+    <string name="tag_group_move_to_parent">Переместить под другой родительский тег</string>
+    <string name="tag_group_remove_from_group">Убрать из группы</string>
+    <string name="tag_group_already_in_group">Уже находится под этим родительским тегом</string>
+    <string name="tag_group_name_is_group">«%1$s» — уже родительский тег, его нельзя вложить в другой</string>
     <string name="local_novel_entry">Локальные новеллы</string>
     <string name="local_novel_pick_folder">Выбрать папку</string>
     <string name="local_novel_empty_no_root">Папка ещё не выбрана.\nВыберите папку с файлами .txt, чтобы начать читать.</string>

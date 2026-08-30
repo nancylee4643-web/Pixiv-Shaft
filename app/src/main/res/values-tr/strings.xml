@@ -2571,6 +2571,13 @@
     <string name="tag_group_delete_child_confirm">“%1$s” alt etiketi gruptan çıkarılsın mı?</string>
     <string name="tag_group_clear_all">Tüm grupları temizle</string>
     <string name="tag_group_clear_all_confirm">Tüm üst etiketler (%1$d) ve alt etiketleri silinsin mi?\nBu yalnızca filtre listesindeki gruplandırmayı etkiler, yer imlerinizi etkilemez.</string>
+    <string name="tag_group_assign_title">“%1$s” etiketini bir üst etiket altına grupla</string>
+    <string name="tag_group_create_and_assign">Üst etiket oluşturup grupla</string>
+    <string name="tag_group_create_and_assign_title">“%1$s” için üst etiket oluştur</string>
+    <string name="tag_group_move_to_parent">Başka bir üst etikete taşı</string>
+    <string name="tag_group_remove_from_group">Gruptan çıkar</string>
+    <string name="tag_group_already_in_group">Zaten bu üst etiketin altında</string>
+    <string name="tag_group_name_is_group">“%1$s” zaten bir üst etiket, başka bir üst etiket altına gruplanamaz</string>
     <string name="local_novel_entry">Yerel Romanlar</string>
     <string name="local_novel_pick_folder">Klasör Seç</string>
     <string name="local_novel_empty_no_root">Henüz klasör seçilmedi.\nOkumaya başlamak için .txt dosyaları olan bir klasör seçin.</string>

@@ -5,10 +5,12 @@ import android.text.InputType
 import ceui.lisa.R
 import ceui.lisa.database.AppDatabase
 import ceui.lisa.utils.Common
+import ceui.pixiv.db.taggroup.GroupWithChildren
 import ceui.pixiv.db.taggroup.TagGroupChildEntity
 import ceui.pixiv.db.taggroup.TagGroupDao
 import ceui.pixiv.db.taggroup.TagGroupEntity
 import ceui.pixiv.witstudio.dialog.WitDialog
+import java.util.Locale
 
 /**
  * 标签分组共享操作弹窗（仿 [ceui.pixiv.ui.synonym.SynonymOperate]）。
@@ -233,6 +235,125 @@ object TagGroupOperate {
                 }
             }
             .show()
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    // 「按标签筛选」列表长按归类
+    // ────────────────────────────────────────────────────────────────
+
+    /**
+     * 长按未分组标签 → 选父标签归类:候选为已有父标签 + 「新建父标签并归类」。
+     * [excludeGroupId] 非 null 时不进候选(子标签「移动到其他父标签」时排除现属父标签)。
+     */
+    @JvmStatic
+    fun showAssignToParentPicker(
+        context: Context,
+        tagName: String,
+        groups: List<GroupWithChildren>,
+        excludeGroupId: Long? = null,
+    ) {
+        // 该名已是父标签(归一化比较,对齐展示管线的父行判定):归为其子标签会被父行判定遮蔽,驳回
+        val tagNameNorm = tagName.trim().lowercase(Locale.getDefault())
+        groups.firstOrNull { it.group.name.trim().lowercase(Locale.getDefault()) == tagNameNorm }
+            ?.let {
+                Common.showToast(context.getString(R.string.tag_group_name_is_group, it.group.name))
+                return
+            }
+        val builder = WitDialog.MenuDialogBuilder(context)
+            .setTitle(context.getString(R.string.tag_group_assign_title, tagName))
+        builder.addItem(context.getString(R.string.tag_group_create_and_assign)) { dialog, _ ->
+            dialog.dismiss()
+            showCreateGroupAndAssignDialog(context, tagName)
+        }
+        groups.forEach { group ->
+            if (group.group.id == excludeGroupId) return@forEach
+            builder.addItem(group.group.name) { dialog, _ ->
+                dialog.dismiss()
+                assignToGroup(context, tagName, group.group)
+            }
+        }
+        builder.show()
+    }
+
+    /** 新建父标签并把 [tagName] 直接归到它下(组建失败则不归类)。 */
+    @JvmStatic
+    fun showCreateGroupAndAssignDialog(context: Context, tagName: String) {
+        val builder = WitDialog.EditTextDialogBuilder(context)
+        builder.setTitle(context.getString(R.string.tag_group_create_and_assign_title, tagName))
+            .setPlaceholder(context.getString(R.string.tag_group_group_name_hint))
+            .setInputType(InputType.TYPE_CLASS_TEXT)
+            .addAction(context.getString(R.string.cancel)) { dialog, _ -> dialog.dismiss() }
+            .addAction(context.getString(R.string.add)) { dialog, _ ->
+                val name = builder.editText.text?.toString()?.trim().orEmpty()
+                if (!isValidTagName(name)) {
+                    Common.showToast(context.getString(R.string.tag_group_name_invalid))
+                    return@addAction
+                }
+                // 展示管线按归一化名先判父行,与标签名仅大小写不同的组名会遮蔽归类,一并驳回
+                if (name.equals(tagName, ignoreCase = true)) {
+                    Common.showToast(context.getString(R.string.tag_group_name_is_group, name))
+                    return@addAction
+                }
+                if (dao(context).getGroupByName(name) != null) {
+                    Common.showToast(context.getString(R.string.tag_group_group_exists))
+                    return@addAction
+                }
+                val groupId = dao(context).insertGroup(TagGroupEntity(name = name))
+                if (groupId == -1L) {
+                    // IGNORE 策略下唯一索引冲突（并发写入等罕见情况）
+                    Common.showToast(context.getString(R.string.tag_group_group_exists))
+                    return@addAction
+                }
+                assignToGroup(context, tagName, TagGroupEntity(id = groupId, name = name))
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    /** 长按子标签 → 移动到其他父标签 / 移出分组。 */
+    @JvmStatic
+    fun showChildAssignMenu(
+        context: Context,
+        child: TagGroupChildEntity,
+        groups: List<GroupWithChildren>,
+    ) {
+        val labels = arrayOf(
+            context.getString(R.string.tag_group_move_to_parent),
+            context.getString(R.string.tag_group_remove_from_group),
+        )
+        WitDialog.MenuDialogBuilder(context)
+            .setTitle(child.name)
+            .addItems(labels) { dialog, which ->
+                dialog.dismiss()
+                when (which) {
+                    0 -> showAssignToParentPicker(context, child.name, groups, excludeGroupId = child.groupId)
+                    1 -> showDeleteChildDialog(context, child)
+                }
+            }
+            .show()
+    }
+
+    /** 把标签名归到 [group] 下:已在则提示、在他组则移动、否则新增。 */
+    private fun assignToGroup(context: Context, tagName: String, group: TagGroupEntity) {
+        val dao = dao(context)
+        // name 唯一索引,理论至多一条
+        val existing = dao.getChildrenByName(tagName).firstOrNull()
+        when {
+            existing == null -> {
+                val id = dao.insertChild(TagGroupChildEntity(groupId = group.id, name = tagName))
+                if (id == -1L) {
+                    Common.showToast(context.getString(R.string.tag_group_child_exists))
+                    return
+                }
+                Common.showToast(context.getString(R.string.operate_success))
+            }
+            existing.groupId == group.id ->
+                Common.showToast(context.getString(R.string.tag_group_already_in_group))
+            else -> {
+                dao.moveChildToGroup(existing.id, group.id)
+                Common.showToast(context.getString(R.string.operate_success))
+            }
+        }
     }
 
     // ────────────────────────────────────────────────────────────────

@@ -2588,6 +2588,13 @@
     <string name="tag_group_delete_child_confirm">Remove child tag “%1$s” from its group?</string>
     <string name="tag_group_clear_all">Clear all groups</string>
     <string name="tag_group_clear_all_confirm">Delete all %1$d parent tags and their child tags?\nThis only affects grouping in the filter list, not your bookmarks.</string>
+    <string name="tag_group_assign_title">Group “%1$s” under a parent tag</string>
+    <string name="tag_group_create_and_assign">New parent tag</string>
+    <string name="tag_group_create_and_assign_title">New parent tag for “%1$s”</string>
+    <string name="tag_group_move_to_parent">Move to another parent tag</string>
+    <string name="tag_group_remove_from_group">Remove from group</string>
+    <string name="tag_group_already_in_group">Already under this parent tag</string>
+    <string name="tag_group_name_is_group">“%1$s” is already a parent tag and cannot be grouped under another</string>
     <string name="local_novel_entry">Local Novels</string>
     <string name="local_novel_pick_folder">Choose Folder</string>
     <string name="local_novel_empty_no_root">No folder selected yet.\nPick a folder with .txt files to start reading.</string>

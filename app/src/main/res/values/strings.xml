@@ -2860,6 +2860,13 @@
     <string name="tag_group_delete_child_confirm">将子标签「%1$s」移出分组？</string>
     <string name="tag_group_clear_all">清空全部分组</string>
     <string name="tag_group_clear_all_confirm">删除全部 %1$d 个父标签及其子标签？\n只影响筛选列表的分组显示，不会影响收藏。</string>
+    <string name="tag_group_assign_title">将「%1$s」归类到父标签</string>
+    <string name="tag_group_create_and_assign">新建父标签并归类</string>
+    <string name="tag_group_create_and_assign_title">新建父标签并归类「%1$s」</string>
+    <string name="tag_group_move_to_parent">移动到其他父标签</string>
+    <string name="tag_group_remove_from_group">移出分组</string>
+    <string name="tag_group_already_in_group">已在该父标签下</string>
+    <string name="tag_group_name_is_group">「%1$s」已是父标签，不能再归到其他父标签下</string>
 
     <!-- 本地小说书库 -->
     <string name="local_novel_entry">本地小说</string>

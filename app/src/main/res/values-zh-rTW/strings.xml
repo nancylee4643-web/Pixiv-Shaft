@@ -2587,6 +2587,13 @@
     <string name="tag_group_delete_child_confirm">將子標籤「%1$s」移出分組？</string>
     <string name="tag_group_clear_all">清空全部分組</string>
     <string name="tag_group_clear_all_confirm">刪除全部 %1$d 個父標籤及其子標籤？\n只影響篩選列表的分組顯示，不會影響收藏。</string>
+    <string name="tag_group_assign_title">將「%1$s」歸類到父標籤</string>
+    <string name="tag_group_create_and_assign">新增父標籤並歸類</string>
+    <string name="tag_group_create_and_assign_title">新增父標籤並歸類「%1$s」</string>
+    <string name="tag_group_move_to_parent">移動到其他父標籤</string>
+    <string name="tag_group_remove_from_group">移出分組</string>
+    <string name="tag_group_already_in_group">已在該父標籤下</string>
+    <string name="tag_group_name_is_group">「%1$s」已是父標籤，不能再歸到其他父標籤下</string>
     <string name="local_novel_entry">本機小說</string>
     <string name="local_novel_pick_folder">選擇資料夾</string>
     <string name="local_novel_empty_no_root">還沒有選擇小說資料夾\n選一個放了 txt 的資料夾開始閱讀</string>

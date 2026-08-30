@@ -40,6 +40,7 @@ import ceui.pixiv.feeds.feedRenderer
 import ceui.pixiv.feeds.feedViewModels
 import ceui.pixiv.session.SessionManager
 import ceui.pixiv.ui.common.viewBinding
+import ceui.pixiv.ui.taggroup.TagGroupOperate
 import ceui.pixiv.utils.ppppx
 import com.blankj.utilcode.util.BarUtils
 import kotlinx.coroutines.Dispatchers
@@ -67,6 +68,11 @@ import java.util.Locale
  * 经 LiveData observe 进 [tagGroups];展示管线 [rebuildDisplay] → [buildGroupedDisplay] 把平铺
  * 列表改组为「父标签行(默认折叠)+ 缩进子标签行」。父标签行单击仍按父标签筛选,右侧
  * 计数+箭头热区展开/收起;子标签行单击按子标签筛选。开关关闭或无映射时输出与纯平铺逐字节一致。
+ *
+ * 长按(分组开关开启时才响应):普通标签行 → 归类到父标签选择器(已有父标签或新建,
+ * 见 [TagGroupOperate.showAssignToParentPicker]);名字命中父标签的行和父标签分组行 → 管理
+ * 菜单(同管理页);子标签行 → 移动到其他父标签 / 移出分组。归类写库后 Room LiveData 自动
+ * 回流 rebuildDisplay,行当场折进父标签。
  *
  * 参数:`type`([Params.DATA_TYPE],0 插画/1 小说)、`starType`([Params.STAR_TYPE],公开/私人收藏)。
  */
@@ -214,6 +220,7 @@ class BookedTagFeedFragment : FeedFragment(R.layout.fragment_booked_tag_feed) {
         inflate = RecyBookTagBinding::inflate,
         create = { cell ->
             cell.binding.root.setOnClickListener { sendFilterAndFinish(cell.item.tag) }
+            cell.binding.root.setOnLongClickListener { onRealTagLongPress(cell.item.tag) }
         },
     ) { cell ->
         val tag = cell.item.tag
@@ -230,6 +237,7 @@ class BookedTagFeedFragment : FeedFragment(R.layout.fragment_booked_tag_feed) {
         inflate = RecyBookTagGroupBinding::inflate,
         create = { cell ->
             cell.binding.root.setOnClickListener { sendFilterAndFinish(cell.item.parent) }
+            cell.binding.root.setOnLongClickListener { onGroupRowLongPress(cell.item.parent) }
             cell.binding.toggleZone.setOnClickListener {
                 toggleGroupExpanded(cell.item.parent.name)
             }
@@ -244,11 +252,12 @@ class BookedTagFeedFragment : FeedFragment(R.layout.fragment_booked_tag_feed) {
         b.expandChevron.rotation = if (item.expanded) 90f else 0f
     }
 
-    /** 子标签行(缩进):单击=按该子标签筛选,行为与普通标签行一致。 */
+    /** 子标签行(缩进):单击=按该子标签筛选,行为与普通标签行一致;长按=移动/移出分组。 */
     private fun bookedTagChildRenderer() = feedRenderer<BookedTagChildItem, RecyBookTagChildBinding>(
         inflate = RecyBookTagChildBinding::inflate,
         create = { cell ->
             cell.binding.root.setOnClickListener { sendFilterAndFinish(cell.item.tag) }
+            cell.binding.root.setOnLongClickListener { onChildTagLongPress(cell.item.tag) }
         },
     ) { cell ->
         val tag = cell.item.tag
@@ -265,6 +274,53 @@ class BookedTagFeedFragment : FeedFragment(R.layout.fragment_booked_tag_feed) {
         val key = parentName.trim().lowercase(Locale.getDefault())
         if (!expandedParents.remove(key)) expandedParents.add(key)
         rebuildDisplay()
+    }
+
+    // ── 长按归类(分组开关关闭时不响应) ────────────────────────────────────
+
+    /** 归一化键,与 buildGroupedDisplay 的 norm 一致:trim + 小写 */
+    private fun normTagKey(name: String?): String =
+        name.orEmpty().trim().lowercase(Locale.getDefault())
+
+    /**
+     * 长按普通标签行:虚拟行(未分類/全部)不响应;名字命中父标签 → 管理菜单;
+     * 否则 → 归类到父标签选择器。
+     */
+    private fun onRealTagLongPress(tag: TagsBean): Boolean {
+        if (!Shaft.sSettings.isTagGroupEnabled || tag.count == -1) return true
+        val name = tag.name?.trim().orEmpty()
+        if (name.isEmpty()) return true
+        tagGroups.firstOrNull { normTagKey(it.group.name) == normTagKey(name) }?.let { group ->
+            TagGroupOperate.showGroupMenu(requireContext(), group.group, group.children.size)
+            return true
+        }
+        TagGroupOperate.showAssignToParentPicker(requireContext(), name, tagGroups)
+        return true
+    }
+
+    /** 长按父标签分组行:管理菜单(添加子标签/重命名/删除/新建父标签),与管理页一致。 */
+    private fun onGroupRowLongPress(parent: TagsBean): Boolean {
+        if (!Shaft.sSettings.isTagGroupEnabled) return true
+        tagGroups.firstOrNull { normTagKey(it.group.name) == normTagKey(parent.name) }?.let { group ->
+            TagGroupOperate.showGroupMenu(requireContext(), group.group, group.children.size)
+        }
+        return true
+    }
+
+    /** 长按子标签行:移动到其他父标签 / 移出分组;映射已消失时退化为归类选择器。 */
+    private fun onChildTagLongPress(tag: TagsBean): Boolean {
+        if (!Shaft.sSettings.isTagGroupEnabled) return true
+        val name = tag.name?.trim().orEmpty()
+        if (name.isEmpty()) return true
+        val key = normTagKey(name)
+        val owner = tagGroups.firstOrNull { g -> g.children.any { normTagKey(it.name) == key } }
+        val child = owner?.children?.firstOrNull { normTagKey(it.name) == key }
+        if (owner != null && child != null) {
+            TagGroupOperate.showChildAssignMenu(requireContext(), child, tagGroups)
+        } else {
+            TagGroupOperate.showAssignToParentPicker(requireContext(), name, tagGroups)
+        }
+        return true
     }
 
     // ── 客户端搜索 + 标签分组展示管线 ────────────────────────────────────────────

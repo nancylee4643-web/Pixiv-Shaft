@@ -2571,6 +2571,13 @@
     <string name="tag_group_delete_child_confirm">자식 태그 “%1$s”을(를) 그룹에서 제거할까요?</string>
     <string name="tag_group_clear_all">그룹 전체 삭제</string>
     <string name="tag_group_clear_all_confirm">부모 태그 %1$d개와 자식 태그를 모두 삭제할까요?\n필터 목록의 표시에만 영향을 주며 북마크에는 영향이 없습니다.</string>
+    <string name="tag_group_assign_title">“%1$s”을(를) 부모 태그로 분류</string>
+    <string name="tag_group_create_and_assign">부모 태그 만들어 분류</string>
+    <string name="tag_group_create_and_assign_title">“%1$s”의 부모 태그 만들기</string>
+    <string name="tag_group_move_to_parent">다른 부모 태그로 이동</string>
+    <string name="tag_group_remove_from_group">그룹에서 제거</string>
+    <string name="tag_group_already_in_group">이미 이 부모 태그 아래에 있습니다</string>
+    <string name="tag_group_name_is_group">“%1$s”은(는) 이미 부모 태그이므로 다른 부모 태그 아래로 분류할 수 없습니다</string>
     <string name="local_novel_entry">로컬 소설</string>
     <string name="local_novel_pick_folder">폴더 선택</string>
     <string name="local_novel_empty_no_root">아직 폴더를 선택하지 않았습니다.\ntxt 파일이 있는 폴더를 선택해 읽기를 시작하세요.</string>
