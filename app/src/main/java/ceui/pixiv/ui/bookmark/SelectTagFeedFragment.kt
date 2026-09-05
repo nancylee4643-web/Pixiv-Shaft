@@ -51,7 +51,7 @@ import timber.log.Timber
  * 撤掉了——收藏是就地完成的轻动作，不该离开当前页。
  *
  * 对宿主暴露三件事：[showAddTagDialog]、[submitStar]、以及内部的选中态收集；其余业务行为
- * 一比一保留 legacy 语义：同义词自动勾选（issue #904）、全选设置。提交这一步已改走
+ * 在 legacy 语义上仅改一处：同义词词典命中改为置顶不勾选（issue #904）、全选设置不变。提交这一步已改走
  * [PixivActions] 的限流队列（原因见 [submitStar]），不再自己打接口。
  */
 class SelectTagFeedFragment : FeedFragment() {
@@ -288,8 +288,8 @@ class SelectTagFeedItem(val tag: TagsBean) : FeedItem {
 /**
  * 「按标签收藏」数据源：单页（nextCursor 恒 null）。
  *
- * load(null)：先拉用户全量收藏标签（勾选要用），再拉本作品已打的标签；然后在 IO 上做三步勾选——
- * 作品标签命中收藏标签 → 勾选；同义词词典自动勾选（issue #904，含全量 DB 读，绝不能上主线程）；
+ * load(null)：先拉用户全量收藏标签（勾选要用），再拉本作品已打的标签；然后在 IO 上做三步——
+ * 作品标签命中收藏标签 → 勾选；同义词词典命中置顶（issue #904，含全量 DB 读，绝不能上主线程）；
  * 最后按设置「全选」。
  *
  * 零 Fragment 捕获：只吃 illustID/type/tagNames（基本类型 + 不可变 list）。
@@ -339,8 +339,9 @@ class SelectTagFeedSource(
     }
 
     /**
-     * 同义词词典（issue #904）核心闭环：作品标签命中词典 → 对应目标标签（=收藏标签）自动勾选。
-     * 收藏标签列表里已有同名目标标签 → 勾选；没有 → 作为新标签插到列表顶部并勾选。
+     * 同义词词典（issue #904）：作品标签命中词典 → 对应目标标签（=收藏标签）置顶但**不勾选**，
+     * 选不选交给用户。收藏标签列表里已有同名目标标签 → 挪到列表最前（多个命中按命中顺序排）；
+     * 没有 → 作为新标签（count 0）插到列表顶部。
      */
     private fun applySynonymMatching(tags: MutableList<TagsBean>) {
         // 功能总开关默认关闭：关闭时按标签收藏页与本功能存在之前完全一致
@@ -351,17 +352,19 @@ class SelectTagFeedSource(
         if (dict.isEmpty()) {
             return
         }
+        val pinned = ArrayList<TagsBean>()
         SynonymMatcher.matchedTargetNames(tagNames, dict).forEach { targetName ->
             val existing = tags.firstOrNull { it.name == targetName }
             if (existing != null) {
-                existing.isSelected = true
+                tags.remove(existing)
+                pinned.add(existing)
             } else {
-                tags.add(0, TagsBean().apply {
+                pinned.add(TagsBean().apply {
                     name = targetName
                     count = 0
-                    isSelected = true
                 })
             }
         }
+        tags.addAll(0, pinned)
     }
 }

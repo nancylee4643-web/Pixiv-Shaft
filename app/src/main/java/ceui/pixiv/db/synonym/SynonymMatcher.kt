@@ -69,7 +69,7 @@ object SynonymMatcher {
     }
 
     /**
-     * 只有标签名、没有译文的场景（按标签收藏页 FragmentSB 只拿得到 tagNames）。
+     * 只有标签名、没有译文的场景（按标签收藏页只拿得到 tagNames）。
      *
      * @return 命中的目标标签名列表，顺序与词典一致
      */

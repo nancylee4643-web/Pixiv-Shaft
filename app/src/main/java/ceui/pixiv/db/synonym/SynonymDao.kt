@@ -23,7 +23,7 @@ interface SynonymDao {
     @Query("SELECT * FROM synonym_target_table ORDER BY createdAt ASC")
     fun getAllWithSynonymsLive(): LiveData<List<TargetWithSynonyms>>
 
-    /** 全部目标标签 + 各自同义词，同步版（匹配引擎 / FragmentSB 自动勾选用） */
+    /** 全部目标标签 + 各自同义词，同步版（匹配引擎 / 按标签收藏命中置顶用） */
     @Transaction
     @Query("SELECT * FROM synonym_target_table ORDER BY createdAt ASC")
     fun getAllWithSynonyms(): List<TargetWithSynonyms>
