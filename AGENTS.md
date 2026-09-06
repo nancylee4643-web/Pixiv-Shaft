@@ -7,8 +7,9 @@ PixShaft（代号 Shaft）是第三方 Pixiv Android 客户端：Kotlin 为主 +
 Flavor 维度 `channel`：`github`（完整版，GitHub 发布）和 `google`（Play 精简版 `IS_LITE=true`）。buildType debug 包名后缀 `.cshaft`，release 后缀 `.pshaft`。JDK 17，compileSdk 36 / minSdk 24。
 
 ```bash
-./gradlew assembleGithubDebug              # 调试 APK
+./gradlew assembleGithubDebug              # 调试 APK（versionName 自动带 -debug-<构建时间戳> 后缀）
 ./gradlew assembleGithubRelease            # 发布 APK（签名读根目录 keystore.properties 或 SHAFT_KEYSTORE_* 环境变量，缺省回退 debug 签名）
+bash scripts/build_release.sh              # 本机出 release 的推荐入口：同上但跳过 Crashlytics mapping 上传（本机直连 googleapis 超时，不跳过构建必失败；代价仅该包崩溃堆栈不符号化）
 ./gradlew testGithubDebugUnitTest          # JVM 单测（app/src/test）
 ./gradlew testGithubDebugUnitTest --tests "ceui.pixiv.db.synonym.*"   # 聚焦单个包/类
 ./gradlew connectedGithubDebugAndroidTest  # 设备测试（Room 迁移测试从 app/schemas 读历史 schema）
