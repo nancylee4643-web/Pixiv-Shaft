@@ -2487,6 +2487,8 @@
     <string name="ai_translate_exit_confirm_exit">終了する</string>
     <string name="synonym_dict_title">同義語辞書</string>
     <string name="synonym_dict_enable">同義語辞書を有効化</string>
+    <string name="synonym_search_expand_enable">検索時に同義語で検索範囲を拡張</string>
+    <string name="synonym_search_expand_toast">同義語で検索範囲を拡張しました：%1$s</string>
     <string name="keep_status_bar_when_view_image">画像表示時にステータスバー領域を残す</string>
     <string name="synonym_add_as_synonym">同義語タグとして追加</string>
     <string name="synonym_new_target">ターゲットタグを新規作成</string>

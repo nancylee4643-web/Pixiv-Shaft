@@ -459,7 +459,7 @@
                 <RelativeLayout
                     android:id="@+id/synonym_dict_enable_rela"
                     style="@style/M3SetRow"
-                    android:background="@drawable/wit_row_single"
+                    android:background="@drawable/wit_row_top"
                     android:layout_marginTop="14dp">
 
                     <LinearLayout style="@style/M3SetTexts">
@@ -482,9 +482,27 @@
                     android:orientation="vertical">
 
                     <RelativeLayout
+                        android:id="@+id/synonym_search_expand_rela"
+                        style="@style/M3SetRow"
+                        android:background="@drawable/wit_row_mid">
+
+                        <LinearLayout style="@style/M3SetTexts">
+
+                            <TextView
+                                style="@style/M3SetTitle"
+                                android:text="@string/synonym_search_expand_enable" />
+                        </LinearLayout>
+
+                        <androidx.appcompat.widget.SwitchCompat
+                            android:id="@+id/synonym_search_expand"
+                            style="@style/M3SetSwitch" />
+
+                    </RelativeLayout>
+
+                    <RelativeLayout
                         android:id="@+id/synonym_dict_rela"
                         style="@style/M3SetRow"
-                        android:background="@drawable/wit_row_single">
+                        android:background="@drawable/wit_row_bottom">
 
                         <LinearLayout style="@style/M3SetTexts">
 

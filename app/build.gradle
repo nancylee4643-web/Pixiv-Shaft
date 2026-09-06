@@ -169,6 +169,12 @@ android {
 
             applicationIdSuffix ".cshaft"
             resValue "string", "app_name", "Shaft(Debug)"
+
+            // debug 包版本名带构建时间戳（4.9.0-debug-20260906153012）：多次安装 / 多台机器的
+            // debug 包在「关于」「系统应用信息」里能区分是哪次构建。release 不受影响。
+            // AppUpdateChecker.isNewerVersion 按 "." 拆 + toIntOrNull，后缀段解析为 null 被丢弃，
+            // 升级检测语义不变。
+            versionNameSuffix "-debug-" + new Date().format("yyyyMMddHHmmss", TimeZone.getTimeZone("Asia/Shanghai"))
         }
         release {
             minifyEnabled true

@@ -2487,6 +2487,8 @@
     <string name="ai_translate_exit_confirm_exit">Выйти</string>
     <string name="synonym_dict_title">Словарь синонимов</string>
     <string name="synonym_dict_enable">Включить словарь синонимов</string>
+    <string name="synonym_search_expand_enable">Расширять поиск тегов синонимами</string>
+    <string name="synonym_search_expand_toast">Поиск расширен синонимами: %1$s</string>
     <string name="keep_status_bar_when_view_image">Оставлять область статус-бара при просмотре изображений</string>
     <string name="synonym_add_as_synonym">Добавить как тег-синоним</string>
     <string name="synonym_new_target">Новый целевой тег</string>

@@ -82,9 +82,47 @@ object SynonymMatcher {
             .map { it.target.name }
     }
 
+    /**
+     * 搜索扩展：把搜索关键词按空白（含全角空格）拆词，对每个词在词典中找同义词变体。
+     *
+     * 单个词的命中规则与 [match] 一致：归一化后等于某目标名或其任一同义词名（备注不参与）。
+     * 命中 → 该词变体组 = [原词, 命中目标名, 各命中目标的全部同义词...]（跨命中目标合并，
+     * 按归一化形式去重保留首个原形，剔除与原词相同者）；未命中 → 组 = [原词]。
+     *
+     * @return 每个词一个变体组，顺序与拆词结果一致；关键词空白（拆不出词）返回空列表。
+     * 调用方对各组做笛卡尔积得到扩展搜索组合（见 SynonymSearchExpansion）。
+     */
+    fun keywordVariantGroups(keyword: String, dictionary: List<TargetWithSynonyms>): List<List<String>> {
+        val words = keyword.split(WHITESPACE_REGEX).filter { it.isNotBlank() }
+        if (words.isEmpty()) return emptyList()
+
+        // 归一化词 → 命中它的全部目标条目（目标名或任一同义词名等于该词）
+        val normalizedWord = words.map { normalize(it) }
+        return words.mapIndexed { index, word ->
+            val key = normalizedWord[index] ?: return@mapIndexed listOf(word)
+            val hitEntries = dictionary.filter { entry ->
+                normalize(entry.target.name) == key ||
+                        entry.synonyms.any { normalize(it.name) == key }
+            }
+            if (hitEntries.isEmpty()) return@mapIndexed listOf(word)
+            val seen = HashSet<String>()
+            seen.add(key)
+            val variants = ArrayList<String>()
+            hitEntries.forEach { entry ->
+                (listOf(entry.target.name) + entry.synonyms.map { it.name }).forEach { candidate ->
+                    val n = normalize(candidate) ?: return@forEach
+                    if (seen.add(n)) variants.add(candidate)
+                }
+            }
+            if (variants.isEmpty()) listOf(word) else listOf(word) + variants
+        }
+    }
+
     /** trim + 小写归一。空白返回 null（不参与匹配） */
     private fun normalize(raw: String?): String? {
         val s = raw?.trim()?.lowercase() ?: return null
         return s.ifEmpty { null }
     }
+
+    private val WHITESPACE_REGEX = Regex("[\\s　]+")
 }

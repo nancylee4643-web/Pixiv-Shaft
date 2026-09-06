@@ -132,6 +132,7 @@ object SettingsCatalog {
         add(Entry(BROWSING, "feed_back_to_top_fab_rela", R.string.feed_back_to_top_fab, R.string.feed_back_to_top_fab_desc, keywords = "回顶 回到顶部 置顶 回顶刷新 刷新 悬浮按钮 悬浮球 浮动按钮 圆形按钮 搜索结果 画师主页 作者页 fab back to top scroll top refresh floating button"))
         add(Entry(BROWSING, "delete_star_illust_rela", R.string.delete_star_illust, keywords = "搜索 已收藏 过滤 去重"))
         add(Entry(BROWSING, "synonym_dict_enable_rela", R.string.synonym_dict_enable, keywords = "同义词 词典 别名 标签翻译 synonym"))
+        add(Entry(BROWSING, "synonym_search_expand_rela", R.string.synonym_search_expand_enable, keywords = "同义词 搜索 扩大 扩展 多标签 标签搜索 synonym search expand"))
         add(Entry(BROWSING, "synonym_dict_rela", R.string.synonym_dict_title, keywords = "同义词 词典 管理 导入 导出 合并 synonym"))
 
         // 看图与详情（FAB 顺序行随 V3 开关显隐，紧贴 V3 行）

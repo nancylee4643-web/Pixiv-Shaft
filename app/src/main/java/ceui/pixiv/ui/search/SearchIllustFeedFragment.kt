@@ -5,19 +5,29 @@ import android.view.View
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import ceui.lisa.R
+import ceui.lisa.activities.Shaft
+import ceui.lisa.database.AppDatabase
 import ceui.lisa.model.ListIllust
 import ceui.lisa.repo.SearchIllustRepo
+import ceui.lisa.utils.Common
 import ceui.lisa.utils.PixivSearchParamUtil
 import ceui.lisa.viewmodel.SearchModel
 import ceui.loxia.appServices
+import ceui.pixiv.db.synonym.SynonymMatcher
 import ceui.pixiv.feeds.FeedPage
 import ceui.pixiv.feeds.FeedSource
 import ceui.pixiv.feeds.LoadState
 import ceui.pixiv.feeds.feedViewModels
 import ceui.pixiv.ui.common.IllustFeedFragment
 import ceui.pixiv.ui.common.IllustFeedItem
+import ceui.pixiv.ui.search.v3.SearchTarget
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
+import timber.log.Timber
 import ceui.pixiv.ui.usage.observeNana7miQuotaNotice
 
 /**
@@ -138,8 +148,14 @@ class SearchIllustFeedFragment : IllustFeedFragment() {
 
 /**
  * 搜索插画数据源：包裹 [SearchIllustRepo]。load(null) 前 `update(searchModel)` 重读最新参数 +
- * 配置 FilterMapper（R18 三态 / onlyAi / starSize）；load(cursor) 用 repo 翻页。过滤走 repo.mapper()
+ * 配置 FilterMapper（R18 三档 / onlyAi / starSize）；load(cursor) 用 repo 翻页。过滤走 repo.mapper()
  * （FilterMapper，含 legacy 全部搜索过滤 + ObjectPool 合池，setValue 失败自动 postValue 兜底，off-main 安全）。
+ *
+ * 同义词扩大搜索（设置开关 + 标签匹配档 + 词典命中时激活）：关键词各词按词典展开变体组，
+ * 笛卡尔积出多条 lane 查询（见 [SynonymSearchExpansion]），每 lane 一个独立 Repo 并发请求、
+ * 结果按 lane 序合并——跨路重复由 FeedViewModel 按 identity（illust id）去重。主路（原始查询）
+ * 失败整页报错，扩展路失败静默丢弃。多路 next_url 经 [SynonymSearchExpansion.encodeCursor]
+ * 编进一个复合游标翻页；未激活扩展时走下方单路路径，行为与本功能加入前完全一致。
  */
 class SearchIllustFeedSource(
     private val searchModel: SearchModel,
@@ -148,6 +164,15 @@ class SearchIllustFeedSource(
 ) : FeedSource<String> {
 
     private var repo: SearchIllustRepo? = null
+
+    /** 扩展激活的当前代：各 lane 的 Repo，下标 0 = 原始查询主路；null = 本代走单路路径。 */
+    private var laneRepos: List<SearchIllustRepo>? = null
+
+    /** 已 Toast 提示过扩展的原始关键词——同一词反复刷新不重复提示。 */
+    private var lastToastedKeyword: String? = null
+
+    /** 一代扩展方案：lane 查询串 + 提示用的新增变体词。 */
+    private class ExpansionPlan(val laneQueries: List<String>, val addedWords: List<String>)
 
     override suspend fun load(cursor: String?): FeedPage<String> {
         // 策略只决定一代搜索的首页；翻页沿用这一代已经固定的 nextUrl。每次键入会更新
@@ -162,9 +187,29 @@ class SearchIllustFeedSource(
                 }
             }
             if (shouldWithhold) {
+                laneRepos = null
                 return FeedPage(emptyList(), null)
             }
         }
+
+        // 多路复合游标翻页
+        if (cursor != null) {
+            val laneUrls = SynonymSearchExpansion.decodeCursor(cursor)
+            if (laneUrls != null) {
+                return loadExpansionNextPage(laneUrls)
+            }
+        }
+
+        // 首页：词典命中则多路并发
+        if (cursor == null) {
+            val plan = resolveExpansionPlan(keywordSnapshot!!)
+            if (plan.laneQueries.size > 1) {
+                return loadExpansionFirstPage(keywordSnapshot, plan)
+            }
+            laneRepos = null
+        }
+
+        // 单路路径（无扩展首页 / 裸 next_url 翻页）
         val r = repo ?: repoFactory().also { repo = it }
         // initApi / initNextApi 是 suspend：借号、缓存查询、Pixiv 请求全在各自的挂起点里切线程，
         // 这里不用再包 withContext(IO)。（搜索历史写入已上移到 SearchActivity，update 不做 Room I/O。）
@@ -182,5 +227,152 @@ class SearchIllustFeedSource(
             filtered.list.orEmpty().mapNotNull { IllustFeedItem.raw(it) }
         }
         return FeedPage(items, list.nextUrl?.takeIf { it.isNotEmpty() })
+    }
+
+    // ---------- 同义词扩大搜索 ----------
+
+    /**
+     * 门控 + 查词典 + 组合 lane：总开关/扩展开关、标签匹配档（partial/exact/null 默认档；
+     * title_and_caption 是标题简介搜索不扩展）、词典命中。任何失败回退单路（返回单条 lane）。
+     */
+    private suspend fun resolveExpansionPlan(keyword: String): ExpansionPlan {
+        if (keyword.isBlank() ||
+            !Shaft.sSettings.isSynonymDictEnabled ||
+            !Shaft.sSettings.isSynonymExpandSearchEnabled
+        ) {
+            return singleLanePlan()
+        }
+        val target = searchModel.searchType.value
+        val isTagSearch = target == null ||
+                target == SearchTarget.PartialMatchForTags.apiValue ||
+                target == SearchTarget.ExactMatchForTags.apiValue
+        if (!isTagSearch) {
+            return singleLanePlan()
+        }
+        return try {
+            withContext(Dispatchers.IO) {
+                val dict = AppDatabase.getAppDatabase(Shaft.getContext())
+                    .synonymDao()
+                    .getAllWithSynonyms()
+                if (dict.isEmpty()) {
+                    return@withContext singleLanePlan()
+                }
+                val groups = SynonymMatcher.keywordVariantGroups(keyword, dict)
+                    // 风险策略逐变体过滤（原词已由上面整句 shouldWithhold 覆盖）；
+                    // 词表此刻已解密，contains 扫描无额外开销
+                    .map { group ->
+                        if (group.size <= 1) group
+                        else listOf(group[0]) + group.drop(1).filterNot(SearchRiskPolicy::shouldWithhold)
+                    }
+                val laneQueries = SynonymSearchExpansion.buildLaneQueries(groups)
+                if (laneQueries.size <= 1) {
+                    singleLanePlan()
+                } else {
+                    ExpansionPlan(laneQueries, groups.flatMap { it.drop(1) }.distinct())
+                }
+            }
+        } catch (ce: CancellationException) {
+            throw ce
+        } catch (e: Exception) {
+            Timber.e(e, "synonym search expansion resolve failed, fallback to single lane")
+            singleLanePlan()
+        }
+    }
+
+    private fun singleLanePlan(): ExpansionPlan = ExpansionPlan(emptyList(), emptyList())
+
+    /** 扩展首页：每 lane 一个全新 Repo（借号会话 / FilterMapper 都是实例级状态）并发请求。 */
+    private suspend fun loadExpansionFirstPage(keyword: String, plan: ExpansionPlan): FeedPage<String> {
+        val repos = plan.laneQueries.map { repoFactory() }
+        val results = fetchLanes(repos) { index, repo ->
+            repo.update(searchModel, plan.laneQueries[index])
+            repo.initApi()
+        }
+        val page = assembleLanePage(repos, results)
+        // 首页成功后才登记本代 lane：失败时 refresh 的游标仍是旧一代的，laneRepos 也必须
+        // 留在旧一代，旧游标翻页才能配上旧 lane 的借号会话
+        laneRepos = repos
+        notifyExpansionOnce(keyword, plan)
+        return page
+    }
+
+    /** 扩展翻页：复合游标解码出各路 next_url，逐路推进；lane 状态与游标不一致时防御性终止。 */
+    private suspend fun loadExpansionNextPage(laneUrls: List<String>): FeedPage<String> {
+        val repos = laneRepos
+        if (repos == null || repos.size != laneUrls.size) {
+            Timber.w(
+                "synonym lanes cursor mismatch: lanes=%s urls=%s, end pagination",
+                repos?.size, laneUrls.size,
+            )
+            laneRepos = null
+            return FeedPage(emptyList(), null)
+        }
+        val results = fetchLanes(repos) { index, repo ->
+            val url = laneUrls[index]
+            if (url.isEmpty()) {
+                null // 该路已到底（编码时空串占位）
+            } else {
+                repo.nextUrl = url
+                repo.initNextApi()
+            }
+        }
+        return assembleLanePage(repos, results)
+    }
+
+    /**
+     * 并发跑全部 lane。主路（下标 0）失败向上抛（整页进 Error，用户可重试）；
+     * 扩展路失败 / [request] 返回 null（已到底）→ 该 lane 记 null，丢弃本页与游标。
+     * CancellationException 一律上抛。
+     */
+    private suspend fun fetchLanes(
+        repos: List<SearchIllustRepo>,
+        request: suspend (index: Int, repo: SearchIllustRepo) -> ListIllust?,
+    ): List<ListIllust?> = coroutineScope {
+        repos.mapIndexed { index, repo ->
+            async {
+                try {
+                    request(index, repo)
+                } catch (ce: CancellationException) {
+                    throw ce
+                } catch (t: Throwable) {
+                    if (index == 0) throw t
+                    Timber.e(t, "synonym search lane %d failed, dropped", index)
+                    null
+                }
+            }
+        }.awaitAll()
+    }
+
+    /** 各路结果过各自 Repo 的 FilterMapper 后按 lane 序拼接，next_url 编回复合游标。 */
+    private suspend fun assembleLanePage(
+        repos: List<SearchIllustRepo>,
+        results: List<ListIllust?>,
+    ): FeedPage<String> {
+        val items = withContext(Dispatchers.Default) {
+            results.mapIndexedNotNull { index, list ->
+                if (list == null) return@mapIndexedNotNull null
+                @Suppress("UNCHECKED_CAST")
+                val filtered = repos[index].mapper().apply(list)
+                // FilterMapper 已做完全部搜索专属过滤 → 直接建条目，不再过滤（否则仅看 AI 误删 AI）。
+                filtered.list.orEmpty().mapNotNull { IllustFeedItem.raw(it) }
+            }.flatten()
+        }
+        val cursor = SynonymSearchExpansion.encodeCursor(results.map { it?.nextUrl })
+        return FeedPage(items, cursor)
+    }
+
+    /** 扩展生效的轻提示：同一原始关键词只提示一次（source 随 VM 存活，跨刷新有效）。 */
+    private suspend fun notifyExpansionOnce(keyword: String, plan: ExpansionPlan) {
+        if (plan.addedWords.isEmpty() || lastToastedKeyword == keyword) return
+        lastToastedKeyword = keyword
+        withContext(Dispatchers.Main) {
+            Common.showToast(
+                Shaft.getContext().getString(
+                    R.string.synonym_search_expand_toast,
+                    plan.addedWords.joinToString("、"),
+                ),
+                1,
+            )
+        }
     }
 }

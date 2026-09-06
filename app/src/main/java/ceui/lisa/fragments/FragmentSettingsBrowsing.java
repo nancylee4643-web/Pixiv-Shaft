@@ -291,6 +291,20 @@ public class FragmentSettingsBrowsing extends SettingsPageFragment<FragmentSetti
         baseBind.synonymDictEnableRela.setOnClickListener(v ->
                 baseBind.synonymDictEnable.performClick());
 
+        // 搜索插画时按同义词扩大搜索（子开关，仅词典总开关打开时可见），默认关闭。
+        // 生效时标签搜索按词典展开多路并发请求并合并结果
+        baseBind.synonymSearchExpand.setChecked(Shaft.sSettings.isSynonymExpandSearchEnabled());
+        baseBind.synonymSearchExpand.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                Shaft.sSettings.setSynonymExpandSearchEnabled(isChecked);
+                Common.showToast(getString(R.string.string_428), 2);
+                Local.setSettings(Shaft.sSettings);
+            }
+        });
+        baseBind.synonymSearchExpandRela.setOnClickListener(v ->
+                baseBind.synonymSearchExpand.performClick());
+
         // 同义词词典管理入口（仅开关打开时可见）
         baseBind.synonymDictRela.setOnClickListener(v -> {
             Intent intent = new Intent(mContext, TemplateActivity.class);

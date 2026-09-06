@@ -411,6 +411,10 @@ public class Settings {
     // 关闭时所有相关 UI（详情页匹配框/长按菜单项/管理页入口/自动导入/自动勾选）完全隐藏
     private boolean synonymDictEnabled = false;
 
+    // 搜索插画时按同义词词典扩大搜索（多路并发合并结果），默认关闭。
+    // 生效前提是 synonymDictEnabled 也开启；仅标签匹配档（部分/完全一致）生效
+    private boolean synonymExpandSearchEnabled = false;
+
     // 标签分组总开关（收藏标签筛选列表把子标签折叠到父标签下），默认开启。
     // 分组只有建了映射才会生效，开关作临时停用：关闭时筛选列表退回纯平铺，管理入口隐藏
     private boolean tagGroupEnabled = true;
@@ -1290,6 +1294,14 @@ public class Settings {
 
     public void setSynonymDictEnabled(boolean synonymDictEnabled) {
         this.synonymDictEnabled = synonymDictEnabled;
+    }
+
+    public boolean isSynonymExpandSearchEnabled() {
+        return synonymExpandSearchEnabled;
+    }
+
+    public void setSynonymExpandSearchEnabled(boolean synonymExpandSearchEnabled) {
+        this.synonymExpandSearchEnabled = synonymExpandSearchEnabled;
     }
 
     public boolean isTagGroupEnabled() {

@@ -2487,6 +2487,8 @@
     <string name="ai_translate_exit_confirm_exit">Çık</string>
     <string name="synonym_dict_title">Eş Anlamlılar Sözlüğü</string>
     <string name="synonym_dict_enable">Eş anlamlılar sözlüğünü etkinleştir</string>
+    <string name="synonym_search_expand_enable">Aramayı eş anlamlı etiketlerle genişlet</string>
+    <string name="synonym_search_expand_toast">Arama eş anlamlılarla genişletildi: %1$s</string>
     <string name="keep_status_bar_when_view_image">Resimleri görüntülerken durum çubuğu alanını koru</string>
     <string name="synonym_add_as_synonym">Eş anlamlı etiket olarak ekle</string>
     <string name="synonym_new_target">Yeni hedef etiket</string>
